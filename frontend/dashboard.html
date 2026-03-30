@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Elevate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        .application-list { margin-top: 30px; }
+        .application-item {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-Pending { background: #FEF3C7; color: #D97706; }
+        .status-Reviewed { background: #DBEAFE; color: #1D4ED8; }
+        .status-Accepted { background: #D1FAE5; color: #059669; }
+        .status-Rejected { background: #FEE2E2; color: #DC2626; }
+        
+        #apply-modal {
+            display: none;
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #fff; padding: 30px; border-radius: 8px; width: 400px; max-width: 90%;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">Elevate</a>
+        <div class="nav-links">
+            <a href="index.html">Browse Jobs</a>
+            <a href="#" id="nav-logout-btn" class="btn btn-outline" style="padding: 5px 15px;">Logout</a>
+        </div>
+    </nav>
+    <main class="container">
+        <div class="dashboard-header">
+            <h1 id="user-greeting">Welcome!</h1>
+        </div>
+
+        <section>
+            <h2>My Applications</h2>
+            <div class="application-list" id="my-applications">
+                <p>Loading applications...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Apply Modal -->
+    <div id="apply-modal">
+        <div class="modal-content">
+            <h3>Apply for Job</h3>
+            <form id="apply-form" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label>Cover Letter</label>
+                    <textarea id="coverLetter" class="form-control" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Resume (PDF max 5MB)</label>
+                    <input type="file" id="resume" class="form-control" accept=".pdf" required>
+                </div>
+                <div style="display:flex; gap:10px; margin-top: 15px;">
+                    <button type="submit" class="btn btn-primary">Submit Application</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        const API = 'http://localhost:5000/api';
+        
+        document.getElementById('nav-logout-btn').addEventListener('click', () => {
+            logout();
+        });
+
+        const loadDashboard = async () => {
+            const user = getUser();
+            if (!user || user.role !== 'user') {
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('user-greeting').innerText = `Welcome back, ${user.name}!`;
+
+            // Check if applying
+            if (window.location.hash === '#apply') {
+                document.getElementById('apply-modal').style.display = 'flex';
+                window.location.hash = '';
+            }
+
+            try {
+                const res = await fetch(`${API}/applications/myapplications`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const apps = await res.json();
+                const container = document.getElementById('my-applications');
+                container.innerHTML = '';
+                
+                if (apps.length === 0) {
+                    container.innerHTML = '<p>You haven\'t applied to any jobs yet.</p>';
+                } else {
+                    apps.forEach(app => {
+                        container.innerHTML += `
+                            <div class="application-item">
+                                <div>
+                                    <h3 style="margin-bottom: 5px;">${app.job?.title || 'Job Deleted'}</h3>
+                                    <p style="color: var(--text-muted); font-size: 0.9rem;">${app.job?.company || 'Unknown Company'}</p>
+                                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 5px;">Applied: ${new Date(app.createdAt).toLocaleDateString()}</p>
+                                </div>
+                                <div class="status-badge status-${app.status}">${app.status}</div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        const closeModal = () => {
+            document.getElementById('apply-modal').style.display = 'none';
+        };
+
+        document.getElementById('apply-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const jobId = localStorage.getItem('applyJobId');
+            if(!jobId) return alert('No job selected.');
+            
+            const formData = new FormData();
+            formData.append('jobId', jobId);
+            formData.append('coverLetter', document.getElementById('coverLetter').value);
+            formData.append('resume', document.getElementById('resume').files[0]);
+
+            try {
+                const res = await fetch(`${API}/applications`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getToken()}` },
+                    body: formData
+                });
+                if (res.ok) {
+                    alert('Application submitted successfully!');
+                    closeModal();
+                    loadDashboard();
+                } else {
+                    const error = await res.json();
+                    alert(error.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevate - Job Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Elevate</div>
+        <div class="nav-links" id="nav-links">
+            <a href="index.html">Home</a>
+            <a href="login.html" id="nav-login">Login</a>
+            <a href="register.html" class="btn btn-primary" id="nav-register">Sign Up</a>
+            <a href="dashboard.html" id="nav-dashboard" style="display:none;">Dashboard</a>
+            <a href="#" id="nav-logout" style="display:none;">Logout</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Find Your Dream Job Today</h1>
+            <p>Connect with top companies and take the next step in your career journey.</p>
+            <div class="search-bar">
+                <input type="text" id="job-search" placeholder="Job title, keywords, or company...">
+                <button class="btn btn-primary">Search Jobs</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="recent-jobs">
+            <h2>Recent Job Postings</h2>
+            <div class="job-grid" id="job-list">
+                <!-- Jobs will be injected here via JS -->
+                 <p class="loading">Loading jobs...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Elevate Job Portal. All Rights Reserved.</p>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchJobs);
+    </script>
+</body>
+</html>
